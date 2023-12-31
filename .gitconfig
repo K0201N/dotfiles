@@ -1,0 +1,34 @@
+[user]
+	name = Kento Nakamura
+	email = 61852433+K0201N@users.noreply.github.com
+
+[core]
+	excludesfile = /Users/k/.gitignore_global
+
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path =
+
+[mergetool "sourcetree"]
+	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+
+[alias]
+	co = checkout
+	st = status
+	br = branch
+	cm = commit
+	cmm = commit -m
+	aa = add -A
+	l  = log
+	lm  = log --merges
+	tree = log --graph --pretty=format:'%x09%C(auto) %h %Cgreen %ar %Creset%x09by"%C(cyan ul)%an%Creset" %x09%C(auto)%s %d'
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+
+[credential]
+	helper = cache --timeout=86400
