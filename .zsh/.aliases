@@ -1,0 +1,23 @@
+# Docker
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+alias ll='ls -alh'
+alias la='ls -A'
+alias l='ls -C'
+
+alias h='history'
+
+alias dc='docker-compose'
+alias dcr='docker-compose run --rm'
+alias dcps='docker-compose ps'
+alias dcu='docker-compose up -d'
+alias dcd='docker-compose down'
+alias dce='docker-compose exec'
+
+# git
+alias g="git"
+alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
+# すでにmasterにmergeされたbranchを一括削除
+alias ggc="g branch --merged | grep -vE '^\*|master$|develop$'  | xargs -I % git br -d %"
