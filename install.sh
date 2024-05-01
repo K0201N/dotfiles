@@ -20,3 +20,5 @@ fi
 pushd ~/dotfiles
 stow -v -t ~ zsh config
 popd
+
+echo "Done!"
