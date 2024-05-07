@@ -18,6 +18,7 @@ if [ ! -d ~/dotfiles ]; then
 fi
 
 pushd ~/dotfiles
+brew bundle --file=~/dotfiles/Brewfile
 stow -v -t ~ zsh config
 popd
 
