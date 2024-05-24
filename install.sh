@@ -2,7 +2,7 @@
 
 set -e
 
-if [ "$(dscl . -read ~/ UserShell)" = "UserShell: /bin/bash" ]; then
+if [ "$SHELL" = "/bin/bash" ]; then
   chsh -s /bin/zsh
   chmod -R 755 /usr/local/share/zsh
   chown -R root:staff /usr/local/share/zsh
