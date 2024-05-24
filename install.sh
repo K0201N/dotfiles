@@ -2,14 +2,27 @@
 
 set -e
 
-if [ "$(dscl . -read ~/ UserShell)" = "UserShell: /bin/bash" ]; then
+if [ "$SHELL" = "/bin/bash" ]; then
   chsh -s /bin/zsh
   chmod -R 755 /usr/local/share/zsh
   chown -R root:staff /usr/local/share/zsh
 fi
 
 if ! command -v brew > /dev/null; then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  case "$(uname -m)" in
+    arm64)
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+      ;;
+    x86_64)
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      ;;
+    *)
+      echo "Unsupported architecture: $(uname -m)"
+      exit 1
+      ;;
+  esac
 fi
 
 if [ ! -d ~/dotfiles ]; then
