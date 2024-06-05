@@ -2,6 +2,8 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 
+alias cdd='cd docker'
+
 alias ll='ls -alh'
 alias la='ls -A'
 alias l='ls -C'
@@ -14,6 +16,7 @@ alias dcps='docker-compose ps'
 alias dcu='docker-compose up -d'
 alias dcd='docker-compose down'
 alias dce='docker-compose exec'
+alias dcl='docker-compose logs -f'
 
 alias g="git"
 alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
