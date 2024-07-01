@@ -19,7 +19,7 @@
 	br = branch
 	cm = commit
 	cmm = commit -m
-	cp = cherry-pick
+	chp = cherry-pick
 	aa = add -A
 	l  = log
 	lm  = log --merges
