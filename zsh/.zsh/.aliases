@@ -10,13 +10,13 @@ alias l='ls -C'
 
 alias h='history'
 
-alias dc='docker-compose'
-alias dcr='docker-compose run --rm'
-alias dcps='docker-compose ps'
-alias dcu='docker-compose up -d'
-alias dcd='docker-compose down'
-alias dce='docker-compose exec'
-alias dcl='docker-compose logs -f'
+alias dc='docker compose'
+alias dcr='docker compose run --rm'
+alias dcps='docker compose ps'
+alias dcu='docker compose up -d'
+alias dcd='docker compose down'
+alias dce='docker compose exec'
+alias dcl='docker compose logs -f'
 
 alias g="git"
 alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
