@@ -15,7 +15,7 @@
 	aa = add -A
 	l  = log
 	lm  = log --merges
-	tree = log --graph --pretty=format:'%x09%C(auto) %h %Cgreen %ar %Creset%x09by"%C(cyan ul)%an%Creset" %x09%C(auto)%s %d'
+	lg = log --graph --pretty=format:'%x09%C(auto) %h %Cgreen %ar %Creset%x09by"%C(cyan ul)%an%Creset" %x09%C(auto)%s %d'
 
 [filter "lfs"]
 	clean = git-lfs clean -- %f
