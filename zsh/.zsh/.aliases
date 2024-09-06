@@ -18,6 +18,7 @@ alias dcd='docker compose down'
 alias dce='docker compose exec'
 alias dcl='docker compose logs -f'
 
+GIT_LOG_FORMAT='%C(yellow)%h %C(cyan)%ad %C(cyan)%ar %Cgreen%an %Creset%s %C(red)%d'
 alias g="git"
 alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
 # すでにmasterにmergeされたbranchを一括削除
