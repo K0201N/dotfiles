@@ -22,3 +22,14 @@ alias g="git"
 alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
 # すでにmasterにmergeされたbranchを一括削除
 alias ggc="g branch --merged | grep -vE '^\*|master$|develop$'  | xargs -I % git br -d %"
+alias gco='g checkout'
+alias gst='g status'
+alias gbr='g branch'
+alias gcm='g commit'
+alias gcmm='g commit -m'
+alias gchp='g cherry-pick'
+alias gaa='g add -A'
+alias gl='g log'
+alias glm='g log --merges'
+alias glg='g log --graph --pretty=format:"%C(auto)%h %Cgreen%ar %Creset%an %s %d"'
+alias gpush='g push'
