@@ -4,9 +4,9 @@ alias ....='cd ../../..'
 
 alias cdd='cd docker'
 
-alias ll='ls -alh'
-alias la='ls -A'
-alias l='ls -C'
+alias ll='ls -alhF --color=auto'
+alias la='ls -A --color=auto'
+alias l='ls -CF --color=auto'
 
 alias h='history'
 
