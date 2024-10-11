@@ -4,6 +4,8 @@ alias ....='cd ../../..'
 
 alias cdd='cd docker'
 
+alias ld='lazydocker'
+
 alias ls='lsd'
 alias l='ls -F'
 alias la='ls -A'
