@@ -39,3 +39,5 @@ alias glm='g log --merges --pretty=format:"$GIT_LOG_FORMAT" --date=short'
 alias glg='g log --graph --pretty=format:"$GIT_LOG_FORMAT" --date=short'
 alias gpush='g push'
 alias gpull='g pull'
+
+alias codi='code-insiders'
