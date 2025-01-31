@@ -52,3 +52,106 @@ brew-maintenance() {
   echo "Done!"
 }
 
+ec2-ssh() {
+  DNS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$1" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
+  [ "$DNS" == "None" ] || [ -z "$DNS" ] && echo "インスタンスが見つからないか、DNSが取得できません" && return 1
+  echo "SSH接続中: ec2-user@$DNS"
+  ssh ec2-user@$DNS
+}
+
+ec2-start() {
+  INSTANCE_NAME=$1
+  if [ -z "$INSTANCE_NAME" ]; then
+    echo "インスタンス名を指定してください"
+    return 1
+  fi
+
+  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+
+  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+    return 1
+  fi
+
+  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+
+  if [ "$STATE" == "running" ]; then
+    echo "インスタンスはすでに起動しています: $INSTANCE_NAME"
+  else
+    echo "インスタンスを起動中: $INSTANCE_NAME"
+    aws ec2 start-instances --instance-ids "$INSTANCE_ID" > /dev/null
+    echo "起動完了を待機中..."
+    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+    echo "インスタンスが起動しました: $INSTANCE_NAME"
+  fi
+}
+
+ec2-stop() {
+  INSTANCE_NAME=$1
+  if [ -z "$INSTANCE_NAME" ]; then
+    echo "インスタンス名を指定してください"
+    return 1
+  fi
+
+  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+
+  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+    return 1
+  fi
+
+  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+
+  if [ "$STATE" == "stopped" ]; then
+    echo "インスタンスはすでに停止しています: $INSTANCE_NAME"
+  else
+    echo "インスタンスを停止中: $INSTANCE_NAME"
+    aws ec2 stop-instances --instance-ids "$INSTANCE_ID" > /dev/null
+    echo "停止完了を待機中..."
+    aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+    echo "インスタンスが停止しました: $INSTANCE_NAME"
+  fi
+}
+
+ec2-start-ssh() {
+  INSTANCE_NAME=$1
+  if [ -z "$INSTANCE_NAME" ]; then
+    echo "インスタンス名を指定してください"
+    return 1
+  fi
+
+  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+
+  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+    return 1
+  fi
+
+  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+
+  if [ "$STATE" == "stopped" ]; then
+    echo "インスタンスが停止しています。起動中: $INSTANCE_NAME"
+    aws ec2 start-instances --instance-ids "$INSTANCE_ID" > /dev/null
+    echo "起動完了を待機中..."
+    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+    echo "インスタンスが起動しました: $INSTANCE_NAME"
+  elif [ "$STATE" == "pending" ]; then
+    echo "インスタンスが起動中です。起動完了を待機中..."
+    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+  elif [ "$STATE" == "running" ]; then
+    echo "インスタンスはすでに起動しています: $INSTANCE_NAME"
+  else
+    echo "インスタンスの状態が不明です: $STATE"
+    return 1
+  fi
+
+  DNS=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
+
+  if [ -z "$DNS" ] || [ "$DNS" == "None" ]; then
+    echo "インスタンスのPublic DNSが取得できませんでした"
+    return 1
+  fi
+
+  echo "SSH接続中: ec2-user@$DNS"
+  ssh ec2-user@$DNS
+}
