@@ -52,6 +52,12 @@ brew-maintenance() {
   echo "Done!"
 }
 
+ec2list() {
+   aws ec2 describe-instances \
+    --query "Reservations[*].Instances[*].[Tags[?Key=='Name'].Value | [0], InstanceId, State.Name]" \
+    --output table
+}
+
 ec2-ssh() {
   DNS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$1" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
   [ "$DNS" == "None" ] || [ -z "$DNS" ] && echo "インスタンスが見つからないか、DNSが取得できません" && return 1
