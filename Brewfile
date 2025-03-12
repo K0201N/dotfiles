@@ -35,6 +35,7 @@ brew "mecab"
 brew "mecab-ipadic"
 brew "mysql"
 brew "node", link: false
+brew "oha"
 brew "pango"
 brew "postgresql@13"
 brew "postgresql@14"
