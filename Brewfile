@@ -22,8 +22,6 @@ brew "mecab"
 brew "mecab-ipadic"
 brew "node", link: false
 brew "oha"
-brew "postgresql@14"
-brew "python@3.13"
 brew "rbenv"
 brew "ripgrep"
 brew "ruby"
