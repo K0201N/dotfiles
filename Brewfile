@@ -24,12 +24,10 @@ brew "node", link: false
 brew "oha"
 brew "rbenv"
 brew "ripgrep"
-brew "ruby"
 brew "rustup-init"
 brew "sanemat/font/ricty"
 brew "stow"
 brew "wireshark"
-brew "yarn"
 brew "yazi"
 brew "zsh-completions"
 
