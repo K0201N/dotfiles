@@ -58,6 +58,21 @@ ec2list() {
     --output table
 }
 
+function ec2ls() {
+  local name_filter="${1:-*}"
+  aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=*${name_filter}*" \
+    --query "Reservations[].Instances[].[\
+      Tags[?Key=='Name']|[0].Value, \
+      InstanceId, \
+      InstanceType, \
+      State.Name, \
+      PublicIpAddress, \
+      PrivateIpAddress, \
+      Placement.AvailabilityZone]" \
+    --output table
+}
+
 ec2-ssh() {
   DNS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$1" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
   [ "$DNS" == "None" ] || [ -z "$DNS" ] && echo "インスタンスが見つからないか、DNSが取得できません" && return 1
