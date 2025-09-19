@@ -51,127 +51,167 @@ brew-maintenance() {
   echo "Done!"
 }
 
+_ec2_id_by_name() {
+  aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=$1" \
+    --query 'Reservations[].Instances[].InstanceId' \
+    --output text | awk 'NF{print; exit}'
+}
+
 ec2list() {
-   aws ec2 describe-instances \
-    --query "Reservations[*].Instances[*].[Tags[?Key=='Name'].Value | [0], InstanceId, State.Name]" \
+  aws ec2 describe-instances \
+    --query 'Reservations[].Instances[].[
+      Tags[?Key==`Name`]|[0].Value,
+      InstanceId,
+      State.Name
+    ]' \
     --output table
 }
 
-function ec2ls() {
-  local name_filter="${1:-*}"
+ec2ls() {
+  name_filter="${1:-*}"
   aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=*${name_filter}*" \
-    --query "Reservations[].Instances[].[\
-      Tags[?Key=='Name']|[0].Value, \
-      InstanceId, \
-      InstanceType, \
-      State.Name, \
-      PublicIpAddress, \
-      PrivateIpAddress, \
-      Placement.AvailabilityZone]" \
+    --query 'Reservations[].Instances[].[
+      Tags[?Key==`Name`]|[0].Value,
+      InstanceId,
+      InstanceType,
+      State.Name,
+      PublicIpAddress,
+      PrivateIpAddress,
+      Placement.AvailabilityZone
+    ]' \
     --output table
 }
 
 ec2-ssh() {
-  DNS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$1" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
-  [ "$DNS" == "None" ] || [ -z "$DNS" ] && echo "インスタンスが見つからないか、DNSが取得できません" && return 1
-  echo "SSH接続中: ec2-user@$DNS"
-  ssh ec2-user@$DNS
+  name="$1"
+  if [ -z "$name" ]; then
+    echo "インスタンス名を指定してください" >&2
+    return 1
+  fi
+
+  id="$(_ec2_id_by_name "$name")"
+  if [ -z "$id" ] || [ "$id" = "None" ]; then
+    echo "指定したインスタンスが見つかりません: $name" >&2
+    return 1
+  fi
+
+  dns="$(aws ec2 describe-instances \
+    --instance-ids "$id" \
+    --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' \
+    --output text)"
+
+  if [ -z "$dns" ] || [ "$dns" = "None" ]; then
+    echo "Public DNS が取得できません（Elastic IP/パブリックIPなしの可能性）" >&2
+    return 1
+  fi
+
+  echo "SSH接続中: ec2-user@$dns"
+  ssh "ec2-user@$dns"
 }
 
 ec2-start() {
-  INSTANCE_NAME=$1
-  if [ -z "$INSTANCE_NAME" ]; then
-    echo "インスタンス名を指定してください"
+  name="$1"
+  if [ -z "$name" ]; then
+    echo "インスタンス名を指定してください" >&2
     return 1
   fi
 
-  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
-
-  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+  id="$(_ec2_id_by_name "$name")"
+  if [ -z "$id" ] || [ "$id" = "None" ]; then
+    echo "指定したインスタンスが見つかりません: $name" >&2
     return 1
   fi
 
-  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+  state="$(aws ec2 describe-instances --instance-ids "$id" \
+    --query 'Reservations[0].Instances[0].State.Name' --output text)"
 
-  if [ "$STATE" == "running" ]; then
-    echo "インスタンスはすでに起動しています: $INSTANCE_NAME"
-  else
-    echo "インスタンスを起動中: $INSTANCE_NAME"
-    aws ec2 start-instances --instance-ids "$INSTANCE_ID" > /dev/null
-    echo "起動完了を待機中..."
-    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
-    echo "インスタンスが起動しました: $INSTANCE_NAME"
+  if [ "$state" = "running" ]; then
+    echo "すでに起動しています: $name ($id)"
+    return 0
   fi
+
+  echo "起動中: $name ($id)"
+  aws ec2 start-instances --instance-ids "$id" >/dev/null
+  echo "起動完了を待機中..."
+  aws ec2 wait instance-running --instance-ids "$id"
+  echo "起動しました: $name"
 }
 
 ec2-stop() {
-  INSTANCE_NAME=$1
-  if [ -z "$INSTANCE_NAME" ]; then
-    echo "インスタンス名を指定してください"
+  name="$1"
+  if [ -z "$name" ]; then
+    echo "インスタンス名を指定してください" >&2
     return 1
   fi
 
-  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
-
-  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+  id="$(_ec2_id_by_name "$name")"
+  if [ -z "$id" ] || [ "$id" = "None" ]; then
+    echo "指定したインスタンスが見つかりません: $name" >&2
     return 1
   fi
 
-  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+  state="$(aws ec2 describe-instances --instance-ids "$id" \
+    --query 'Reservations[0].Instances[0].State.Name' --output text)"
 
-  if [ "$STATE" == "stopped" ]; then
-    echo "インスタンスはすでに停止しています: $INSTANCE_NAME"
-  else
-    echo "インスタンスを停止中: $INSTANCE_NAME"
-    aws ec2 stop-instances --instance-ids "$INSTANCE_ID" > /dev/null
-    echo "停止完了を待機中..."
-    aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
-    echo "インスタンスが停止しました: $INSTANCE_NAME"
+  if [ "$state" = "stopped" ]; then
+    echo "すでに停止しています: $name ($id)"
+    return 0
   fi
+
+  echo "停止中: $name ($id)"
+  aws ec2 stop-instances --instance-ids "$id" >/dev/null
+  echo "停止完了を待機中..."
+  aws ec2 wait instance-stopped --instance-ids "$id"
+  echo "停止しました: $name"
 }
 
 ec2-start-ssh() {
-  INSTANCE_NAME=$1
-  if [ -z "$INSTANCE_NAME" ]; then
-    echo "インスタンス名を指定してください"
+  name="$1"
+  if [ -z "$name" ]; then
+    echo "インスタンス名を指定してください" >&2
     return 1
   fi
 
-  INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
-
-  if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-    echo "指定したインスタンスが見つかりません: $INSTANCE_NAME"
+  id="$(_ec2_id_by_name "$name")"
+  if [ -z "$id" ] || [ "$id" = "None" ]; then
+    echo "指定したインスタンスが見つかりません: $name" >&2
     return 1
   fi
 
-  STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].State.Name' --output text)
+  state="$(aws ec2 describe-instances --instance-ids "$id" \
+    --query 'Reservations[0].Instances[0].State.Name' --output text)"
 
-  if [ "$STATE" == "stopped" ]; then
-    echo "インスタンスが停止しています。起動中: $INSTANCE_NAME"
-    aws ec2 start-instances --instance-ids "$INSTANCE_ID" > /dev/null
-    echo "起動完了を待機中..."
-    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
-    echo "インスタンスが起動しました: $INSTANCE_NAME"
-  elif [ "$STATE" == "pending" ]; then
-    echo "インスタンスが起動中です。起動完了を待機中..."
-    aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
-  elif [ "$STATE" == "running" ]; then
-    echo "インスタンスはすでに起動しています: $INSTANCE_NAME"
-  else
-    echo "インスタンスの状態が不明です: $STATE"
+  case "$state" in
+    stopped)
+      echo "停止中 → 起動します: $name ($id)"
+      aws ec2 start-instances --instance-ids "$id" >/dev/null
+      echo "起動完了を待機中..."
+      aws ec2 wait instance-running --instance-ids "$id"
+      ;;
+    pending)
+      echo "起動中 → 起動完了を待機中..."
+      aws ec2 wait instance-running --instance-ids "$id"
+      ;;
+    running)
+      echo "既に起動済み: $name ($id)"
+      ;;
+    *)
+      echo "インスタンスの状態が不明です: $state" >&2
+      return 1
+      ;;
+  esac
+
+  dns="$(aws ec2 describe-instances --instance-ids "$id" \
+    --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' \
+    --output text)"
+
+  if [ -z "$dns" ] || [ "$dns" = "None" ]; then
+    echo "Public DNS が取得できませんでした" >&2
     return 1
   fi
 
-  DNS=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' --output text)
-
-  if [ -z "$DNS" ] || [ "$DNS" == "None" ]; then
-    echo "インスタンスのPublic DNSが取得できませんでした"
-    return 1
-  fi
-
-  echo "SSH接続中: ec2-user@$DNS"
-  ssh ec2-user@$DNS
+  echo "SSH接続中: ec2-user@$dns"
+  ssh "ec2-user@$dns"
 }
