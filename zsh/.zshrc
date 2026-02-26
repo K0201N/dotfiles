@@ -13,3 +13,4 @@ SAVEHIST=1000000
   eval "$(rbenv init -)"
 
 export PATH="$HOME/go/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
