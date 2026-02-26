@@ -12,5 +12,4 @@ SAVEHIST=1000000
   export PATH=${HOME}/.rbenv/bin:${PATH} && \
   eval "$(rbenv init -)"
 
-PATH=~/.console-ninja/.bin:$PATH
 export PATH="$HOME/go/bin:$PATH"
