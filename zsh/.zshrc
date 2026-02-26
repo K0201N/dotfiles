@@ -4,14 +4,6 @@
 [ -f ~/.zsh/.prompt ] && source ~/.zsh/.prompt
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
-export LANG=ja_JP.UTF-8
 HISTFILE=~/.zsh_history
 HISTSIZE=1000000
 SAVEHIST=1000000
-
-[[ -d ~/.rbenv  ]] && \
-  export PATH=${HOME}/.rbenv/bin:${PATH} && \
-  eval "$(rbenv init -)"
-
-export PATH="$HOME/go/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
