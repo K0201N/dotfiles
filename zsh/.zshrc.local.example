@@ -1,0 +1,15 @@
+# Local-only zsh settings loaded by ~/.zshrc.
+# Copy this file to ~/.zshrc.local and edit per machine.
+# Keep machine-specific paths, profile-specific aliases, and private env vars here.
+#
+# PATH example:
+# [[ -d "$HOME/.your-tool/bin" ]] && export PATH="$PATH:$HOME/.your-tool/bin"
+#
+# Profile switch example:
+# export LOCAL_PROFILE="profile_name"
+# if [[ "$LOCAL_PROFILE" == "profile_name" ]]; then
+#   source "$HOME/.zsh/profiles/profile_aliases.zsh"
+# fi
+#
+# Private env var example:
+# export SERVICE_PROFILE="profile_name"

@@ -2,6 +2,7 @@
 [ -f ~/.zsh/.options ] && source ~/.zsh/.options
 [ -f ~/.zsh/.functions ] && source ~/.zsh/.functions
 [ -f ~/.zsh/.prompt ] && source ~/.zsh/.prompt
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 export LANG=ja_JP.UTF-8
 HISTFILE=~/.zsh_history
