@@ -1,7 +1,6 @@
 setopt AUTO_PUSHD
 setopt correct
 setopt hist_ignore_all_dups
-setopt hist_ignore_dups
 setopt list_packed
 setopt no_beep
 setopt prompt_subst
