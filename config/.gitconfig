@@ -2,9 +2,6 @@
 	name = Kento Nakamura
 	email = 61852433+K0201N@users.noreply.github.com
 
-[core]
-	excludesfile = /Users/k/.gitignore_global
-
 [alias]
 	co = checkout
 	st = status
