@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Shell and Stow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck stow zsh
+
+      - name: Check install script
+        run: shellcheck install.sh
+
+      - name: Check Zsh syntax
+        run: find zsh -type f -exec zsh -n {} +
+
+      - name: Check Brewfile syntax
+        run: ruby -c Brewfile
+
+      - name: Check Dependabot configuration syntax
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/dependabot.yml")'
+
+      - name: Check Stow layout
+        run: |
+          stow_target="${RUNNER_TEMP}/stow-home"
+          mkdir -p "$stow_target"
+          stow --target="$stow_target" zsh config
+          test -L "$stow_target/.zprofile"
+          test -L "$stow_target/.zshrc"
+          test -L "$stow_target/.gitconfig"
+
+  brewfile:
+    name: Brewfile
+    runs-on: macos-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Validate Brewfile
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: brew bundle list --all --file Brewfile > /dev/null
