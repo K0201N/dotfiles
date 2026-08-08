@@ -52,6 +52,13 @@ jobs:
           test -L "$stow_target/.zprofile"
           test -L "$stow_target/.zshrc"
           test -L "$stow_target/.gitconfig"
+          test -e "$stow_target/.config/git/ignore"
+          ignore_test_repo="$stow_target/ignore-test"
+          mkdir -p "$ignore_test_repo"
+          git -C "$ignore_test_repo" init --quiet
+          touch "$ignore_test_repo/.DS_Store"
+          HOME="$stow_target" XDG_CONFIG_HOME="$stow_target/.config" \
+            git -C "$ignore_test_repo" check-ignore --quiet .DS_Store
 
   brewfile:
     name: Brewfile
