@@ -24,14 +24,12 @@ if ! command -v brew > /dev/null; then
   esac
 fi
 
-if [ ! -d ~/dotfiles ]; then
-  cd ~
+if [ ! -d "$HOME/dotfiles" ]; then
+  cd "$HOME"
   git clone https://github.com/K0201N/dotfiles.git
 fi
 
-pushd ~/dotfiles
-brew bundle --file=~/dotfiles/Brewfile
-stow -v -t ~ zsh config
-popd
+brew bundle --file="$HOME/dotfiles/Brewfile"
+stow -v -d "$HOME/dotfiles" -t "$HOME" zsh config
 
 echo "Done!"
