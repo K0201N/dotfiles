@@ -31,7 +31,9 @@ jobs:
           sudo apt-get install --yes shellcheck stow zsh
 
       - name: Check install script
-        run: shellcheck install.sh
+        run: |
+          shellcheck install.sh
+          dash -n install.sh
 
       - name: Check Zsh syntax
         run: find zsh -type f -exec zsh -n {} +
