@@ -36,7 +36,7 @@ jobs:
           dash -n install.sh
 
       - name: Check Zsh syntax
-        run: find zsh -type f -exec zsh -n {} +
+        run: find zsh -type f -not -name .stow-local-ignore -print0 | xargs -0 -n1 zsh -n
 
       - name: Check Brewfile syntax
         run: ruby -c Brewfile
