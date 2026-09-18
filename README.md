@@ -8,7 +8,7 @@ macOS向けの個人用dotfiles。ZshとGitの設定はStowで、コマンドラ
 
 ## Setup
 
-既存の`~/.zshrc`、`~/.zprofile`、`~/.zsh`、`~/.gitconfig`をバックアップしてから、次を実行する。
+既存の`~/.zshrc`、`~/.zprofile`、`~/.zsh`、`~/.gitconfig`、`~/.config/git/ignore`をバックアップしてから、次を実行する。
 
 ```sh
 git clone https://github.com/K0201N/dotfiles.git "$HOME/dotfiles"
