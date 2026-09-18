@@ -1,11 +1,17 @@
+for _zc in "${HOMEBREW_PREFIX:-}/share/zsh-completions" \
+           /opt/homebrew/share/zsh-completions \
+           /usr/local/share/zsh-completions; do
+  if [ -d "$_zc" ]; then
+    fpath=("$_zc" $fpath)
+    break
+  fi
+done
+unset _zc
+
 autoload -Uz compinit
 compinit -u
-if [ -e /usr/local/share/zsh-completions ]; then
-  fpath=(/usr/local/share/zsh-completions $fpath)
-fi
 
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-
 autoload colors
 zstyle ':completion:*' list-colors ''
 
@@ -15,6 +21,7 @@ zstyle ':vcs_info:git:*' stagedstr "%F{#FF00FF}!"
 zstyle ':vcs_info:git:*' unstagedstr "%F{#FFFF00}+"
 zstyle ':vcs_info:*' formats "%F{#00FF00} 🌿%c%u%b%f"
 zstyle ':vcs_info:*' actionformats '[%b|%a]'
+
 precmd () { vcs_info }
 
 PROMPT='

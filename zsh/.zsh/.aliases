@@ -25,8 +25,8 @@ alias dcl='docker compose logs -f'
 GIT_LOG_FORMAT='%C(yellow)%h %C(cyan)%ad %C(cyan)%ar %Cgreen%an %Creset%s %C(red)%d'
 alias g="git"
 alias cbr='git symbolic-ref --short HEAD|tr -d \"\\n\"'
-# すでにmasterにmergeされたbranchを一括削除
-alias ggc="g branch --merged | grep -vE '^\*|master$|develop$'  | xargs -I % git br -d %"
+# 取り込み済みのbranchを一括削除（主要branchは除く）
+alias ggc="g branch --merged | grep -vE '^\*|main$|master$|develop$' | xargs -I % git br -d %"
 alias gco='g checkout'
 alias gst='g status'
 alias gbr='g branch'

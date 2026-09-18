@@ -7,22 +7,32 @@ export FZF_CTRL_T_OPTS='--preview "bat  --color=always --style=header,grid --lin
 [ -f "$(brew --prefix)/opt/fzf/shell/completion.zsh" ] && source "$(brew --prefix)/opt/fzf/shell/completion.zsh"
 
 fvim() {
+  local files selected_files
   files=$(git ls-files) &&
   selected_files=$(echo "$files" | fzf -m --preview 'head -100 {}') &&
-  vim $selected_files
+  vim -- ${(f)selected_files}
 }
 
 fga() {
-  modified_files=$(git status --short | awk '{print $2}') &&
-  selected_files=$(echo "$modified_files" | fzf -m --preview 'git diff {}') &&
-  git add $selected_files
+  local files selected
+  (
+    cd "$(git rev-parse --show-toplevel)" || return 1
+    files=$(git -c core.quotePath=false status --porcelain) || return 1
+    if printf '%s\n' "$files" | grep -q '\\'; then
+      echo "特殊文字を含むファイル名があるため fga では扱えません。git add を直接使ってください" >&2
+      return 1
+    fi
+    files=$(printf '%s\n' "$files" | sed -E -e 's/^[RC].{2}.* -> //' -e 't q' -e 's/^.{3}//' -e ':q' -e 's/^"(.*)"$/\1/') &&
+    selected=$(printf '%s\n' "$files" | fzf -m --preview 'git diff -- {}') &&
+    git add -- ${(f)selected}
+  )
 }
 
 fbr() {
   local branches branch
   branches=$(git --no-pager branch -vv) &&
   branch=$(echo "$branches" | fzf +m) &&
-  git checkout $(echo "$branch" | awk '{print $1}' | sed "s/.* //")
+  git checkout "$(echo "$branch" | sed 's/^[*+] *//' | awk '{print $1}')"
 }
 
 flog() {
@@ -53,10 +63,68 @@ brew-maintenance() {
 }
 
 _ec2_id_by_name() {
-  aws ec2 describe-instances \
+  local out
+  local -a ids
+  if [ -z "$1" ]; then
+    echo "インスタンス名を指定してください" >&2
+    return 1
+  fi
+  out="$(aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=$1" \
+              "Name=instance-state-name,Values=pending,running,stopping,stopped" \
     --query 'Reservations[].Instances[].InstanceId' \
-    --output text | awk 'NF{print; exit}'
+    --output text)" || return 1
+  ids=(${=out})
+  case ${#ids} in
+    0) echo "指定したインスタンスが見つかりません: $1" >&2; return 1 ;;
+    1) print -r -- "${ids[1]}" ;;
+    *) echo "インスタンス名が複数に一致します: $1 (${ids[*]})" >&2; return 1 ;;
+  esac
+}
+
+_ec2_state() {
+  aws ec2 describe-instances --instance-ids "$1" \
+    --query 'Reservations[0].Instances[0].State.Name' --output text
+}
+
+_ec2_ensure_running() {
+  local id="$1" name="$2" state
+  state="$(_ec2_state "$id")" || return 1
+  case "$state" in
+    running)
+      echo "すでに起動しています: $name ($id)"
+      return 0
+      ;;
+    pending)
+      echo "起動中 → $name ($id)"
+      ;;
+    stopped)
+      echo "起動中: $name ($id)"
+      aws ec2 start-instances --instance-ids "$id" >/dev/null || return 1
+      ;;
+    *)
+      echo "起動できない状態です: $name ($id) [$state]" >&2
+      return 1
+      ;;
+  esac
+  echo "起動完了を待機中..."
+  aws ec2 wait instance-running --instance-ids "$id" || return 1
+  echo "起動しました: $name"
+}
+
+_ec2_connect() {
+  local dns
+  dns="$(aws ec2 describe-instances --instance-ids "$1" \
+    --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' \
+    --output text)" || return 1
+
+  if [ -z "$dns" ] || [ "$dns" = "None" ]; then
+    echo "Public DNS が取得できません（Elastic IP/パブリックIPなしの可能性）" >&2
+    return 1
+  fi
+
+  echo "SSH接続中: ec2-user@$dns"
+  ssh "ec2-user@$dns"
 }
 
 ec2list() {
@@ -70,6 +138,7 @@ ec2list() {
 }
 
 ec2ls() {
+  local name_filter
   name_filter="${1:-*}"
   aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=*${name_filter}*" \
@@ -86,135 +155,39 @@ ec2ls() {
 }
 
 ec2-ssh() {
-  name="$1"
-  if [ -z "$name" ]; then
-    echo "インスタンス名を指定してください" >&2
-    return 1
-  fi
-
-  id="$(_ec2_id_by_name "$name")"
-  if [ -z "$id" ] || [ "$id" = "None" ]; then
-    echo "指定したインスタンスが見つかりません: $name" >&2
-    return 1
-  fi
-
-  dns="$(aws ec2 describe-instances \
-    --instance-ids "$id" \
-    --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' \
-    --output text)"
-
-  if [ -z "$dns" ] || [ "$dns" = "None" ]; then
-    echo "Public DNS が取得できません（Elastic IP/パブリックIPなしの可能性）" >&2
-    return 1
-  fi
-
-  echo "SSH接続中: ec2-user@$dns"
-  ssh "ec2-user@$dns"
+  local id
+  id="$(_ec2_id_by_name "$1")" || return 1
+  _ec2_connect "$id"
 }
 
 ec2-start() {
-  name="$1"
-  if [ -z "$name" ]; then
-    echo "インスタンス名を指定してください" >&2
-    return 1
-  fi
-
-  id="$(_ec2_id_by_name "$name")"
-  if [ -z "$id" ] || [ "$id" = "None" ]; then
-    echo "指定したインスタンスが見つかりません: $name" >&2
-    return 1
-  fi
-
-  state="$(aws ec2 describe-instances --instance-ids "$id" \
-    --query 'Reservations[0].Instances[0].State.Name' --output text)"
-
-  if [ "$state" = "running" ]; then
-    echo "すでに起動しています: $name ($id)"
-    return 0
-  fi
-
-  echo "起動中: $name ($id)"
-  aws ec2 start-instances --instance-ids "$id" >/dev/null
-  echo "起動完了を待機中..."
-  aws ec2 wait instance-running --instance-ids "$id"
-  echo "起動しました: $name"
-}
-
-ec2-stop() {
-  name="$1"
-  if [ -z "$name" ]; then
-    echo "インスタンス名を指定してください" >&2
-    return 1
-  fi
-
-  id="$(_ec2_id_by_name "$name")"
-  if [ -z "$id" ] || [ "$id" = "None" ]; then
-    echo "指定したインスタンスが見つかりません: $name" >&2
-    return 1
-  fi
-
-  state="$(aws ec2 describe-instances --instance-ids "$id" \
-    --query 'Reservations[0].Instances[0].State.Name' --output text)"
-
-  if [ "$state" = "stopped" ]; then
-    echo "すでに停止しています: $name ($id)"
-    return 0
-  fi
-
-  echo "停止中: $name ($id)"
-  aws ec2 stop-instances --instance-ids "$id" >/dev/null
-  echo "停止完了を待機中..."
-  aws ec2 wait instance-stopped --instance-ids "$id"
-  echo "停止しました: $name"
+  local id
+  id="$(_ec2_id_by_name "$1")" || return 1
+  _ec2_ensure_running "$id" "$1"
 }
 
 ec2-start-ssh() {
-  name="$1"
-  if [ -z "$name" ]; then
-    echo "インスタンス名を指定してください" >&2
-    return 1
+  local id
+  id="$(_ec2_id_by_name "$1")" || return 1
+  _ec2_ensure_running "$id" "$1" || return 1
+  _ec2_connect "$id"
+}
+
+ec2-stop() {
+  local id state
+  id="$(_ec2_id_by_name "$1")" || return 1
+  state="$(_ec2_state "$id")" || return 1
+
+  if [ "$state" = "stopped" ]; then
+    echo "すでに停止しています: $1 ($id)"
+    return 0
   fi
 
-  id="$(_ec2_id_by_name "$name")"
-  if [ -z "$id" ] || [ "$id" = "None" ]; then
-    echo "指定したインスタンスが見つかりません: $name" >&2
-    return 1
-  fi
-
-  state="$(aws ec2 describe-instances --instance-ids "$id" \
-    --query 'Reservations[0].Instances[0].State.Name' --output text)"
-
-  case "$state" in
-    stopped)
-      echo "停止中 → 起動します: $name ($id)"
-      aws ec2 start-instances --instance-ids "$id" >/dev/null
-      echo "起動完了を待機中..."
-      aws ec2 wait instance-running --instance-ids "$id"
-      ;;
-    pending)
-      echo "起動中 → 起動完了を待機中..."
-      aws ec2 wait instance-running --instance-ids "$id"
-      ;;
-    running)
-      echo "既に起動済み: $name ($id)"
-      ;;
-    *)
-      echo "インスタンスの状態が不明です: $state" >&2
-      return 1
-      ;;
-  esac
-
-  dns="$(aws ec2 describe-instances --instance-ids "$id" \
-    --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicDnsName' \
-    --output text)"
-
-  if [ -z "$dns" ] || [ "$dns" = "None" ]; then
-    echo "Public DNS が取得できませんでした" >&2
-    return 1
-  fi
-
-  echo "SSH接続中: ec2-user@$dns"
-  ssh "ec2-user@$dns"
+  echo "停止中: $1 ($id)"
+  aws ec2 stop-instances --instance-ids "$id" >/dev/null || return 1
+  echo "停止完了を待機中..."
+  aws ec2 wait instance-stopped --instance-ids "$id" || return 1
+  echo "停止しました: $1"
 }
 
 # 指定ディレクトリを GitHub リポジトリ化して push まで行う

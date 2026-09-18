@@ -2,10 +2,8 @@
 
 set -e
 
-if [ "$SHELL" = "/bin/bash" ]; then
+if [ "$(basename "${SHELL:-}")" != "zsh" ]; then
   chsh -s /bin/zsh
-  chmod -R 755 /usr/local/share/zsh
-  chown -R root:staff /usr/local/share/zsh
 fi
 
 if ! command -v brew > /dev/null; then
@@ -16,6 +14,7 @@ if ! command -v brew > /dev/null; then
       ;;
     x86_64)
       /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      eval "$(/usr/local/bin/brew shellenv)"
       ;;
     *)
       echo "Unsupported architecture: $(uname -m)"

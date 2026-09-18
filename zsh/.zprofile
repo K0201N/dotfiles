@@ -11,3 +11,6 @@ export LANG=ja_JP.UTF-8
 [[ -d ~/.rbenv ]] && export PATH="${HOME}/.rbenv/bin:${PATH}" && eval "$(rbenv init -)"
 export PATH="$HOME/go/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+[[ -d "$HOME/.docker/bin" ]] && export PATH="$PATH:$HOME/.docker/bin"
+
+typeset -U path
