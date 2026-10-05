@@ -56,7 +56,7 @@ fcd() {
 brew-maintenance() {
   echo "Starting Homebrew maintenance..."
   brew update
-  brew upgrade
+  HOMEBREW_NO_UPGRADE_AUTO_UPDATES_CASKS=1 brew upgrade
   brew autoremove
   brew cleanup
   echo "Done!"
